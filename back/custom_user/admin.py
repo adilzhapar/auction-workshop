@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django_use_email_as_username.admin import BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
-
 from .models import User
+
 
 class CustomUserAdmin(BaseUserAdmin):
     fieldsets = (
