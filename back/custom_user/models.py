@@ -8,3 +8,6 @@ class User(BaseUser):
     date_of_birth = models.DateField(null=True, blank=True)
     REQUIRED_FIELDS = ['first_name', 'last_name', 'date_of_birth']
     objects = BaseUserManager()
+
+    def __str__(self):
+        return f'{self.first_name} {self.last_name}'
