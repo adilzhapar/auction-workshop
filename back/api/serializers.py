@@ -11,24 +11,22 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('first_name', 'last_name')
 
 
-class ItemSerializer(serializers.ModelSerializer):
-
+class ItemCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return Item.objects.create(**validated_data)
+
+    class Meta:
+        model = Item
+        fields = ('name', 'description', 'img', 'owner', 'initial_price', 'status')
+
+
+class ItemSerializer(serializers.ModelSerializer):
 
     owner = UserSerializer()
 
     class Meta:
         model = Item
         fields = ('id', 'name', 'description', 'img', 'owner', 'initial_price', 'status')
-
-
-class ItemOnBidSerializer(serializers.ModelSerializer):
-    owner = UserSerializer()
-
-    class Meta:
-        model = Item
-        fields = ('name', 'description', 'img', 'owner')
 
 
 class ItemOnSaleSerializer(serializers.ModelSerializer):
@@ -38,7 +36,7 @@ class ItemOnSaleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"current_price": "Current price must be greater than initial price."})
         if attrs['last_bidder'] == attrs['item'].owner:
             raise serializers.ValidationError({"last_bidder": "Last bidder cannot be the owner."})
-        attrs['item'].status = Item.ON_SALE
+
         return attrs
 
     def create(self, validated_data):
@@ -49,13 +47,36 @@ class ItemOnSaleSerializer(serializers.ModelSerializer):
             [validated_data['item'].owner.email],
             fail_silently=False,
         )
+        item_key = validated_data['item'].id
+        item = Item.objects.get(id=item_key)
+        item.status = Item.ON_SALE
+        item.save()
+
         current_item = ItemOnSale.objects.create(**validated_data)
         current_item.save()
         return current_item
 
-    # item = ItemSerializer()
-    # current_bidder = UserSerializer(read_only=True, source='last_bidder')
+    def update(self, instance, validated_data):
+        if instance.current_price >= validated_data['current_price']:
+            raise serializers.ValidationError({"current_price": "New price must be greater than previous price."})
+        send_mail(
+            'Your bid was intercepted!',
+            validated_data['item'].name + ' Current price: ' + str(validated_data['current_price']),
+            settings.DEFAULT_FROM_EMAIL,
+            [validated_data['item'].owner.email],
+            fail_silently=False,
+        )
+        return super().update(instance, validated_data)
 
     class Meta:
         model = ItemOnSale
         fields = ('item', 'current_price', 'last_bidder')
+
+
+class ItemOnSaleReadSerializer(ItemOnSaleSerializer):
+    item = ItemSerializer(read_only=True)
+    last_bidder = UserSerializer(read_only=True)
+
+    class Meta:
+        model = ItemOnSale
+        fields = ('id', 'item', 'current_price', 'last_bidder')
