@@ -19,3 +19,4 @@ PyYAML~=6.0
 setuptools~=59.6.0
 sqlparse~=0.4.3
 uritemplate~=4.1.1
+environ~=1.0
