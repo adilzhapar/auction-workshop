@@ -18,5 +18,6 @@ class UserView(ViewSet):
     queryset = User.objects.all()
 
     def list(self, request):
+
         serializer = UserSerializer(self.queryset, many=True)
         return Response(serializer.data)
