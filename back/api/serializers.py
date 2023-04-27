@@ -3,6 +3,8 @@ from django.core.mail import send_mail
 from .models import *
 from custom_user.models import User
 from django.conf import settings
+from celery import shared_task
+import time
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -36,9 +38,13 @@ class ItemOnSaleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"current_price": "Current price must be greater than initial price."})
         if attrs['last_bidder'] == attrs['item'].owner:
             raise serializers.ValidationError({"last_bidder": "Last bidder cannot be the owner."})
+        same_item_on_sale = ItemOnSale.objects.filter(item=attrs['item']).count()
+        if same_item_on_sale >= 1:
+            raise serializers.ValidationError({"item": "This item is already on sale."})
 
         return attrs
 
+    @shared_task(bind=True)
     def create(self, validated_data):
         send_mail(
             'Your item is on sale!',
@@ -56,6 +62,7 @@ class ItemOnSaleSerializer(serializers.ModelSerializer):
         current_item.save()
         return current_item
 
+    @shared_task(bind=True)
     def update(self, instance, validated_data):
         if instance.current_price >= validated_data['current_price']:
             raise serializers.ValidationError({"current_price": "New price must be greater than previous price."})
