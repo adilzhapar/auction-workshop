@@ -1,11 +1,8 @@
 from rest_framework import serializers
-from django.core.mail import send_mail
 from .models import *
 from custom_user.models import User
-from django.conf import settings
 from celery import shared_task
-from .tasks import item_sold
-import time
+from .tasks import item_sold, send_notification_email
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -24,7 +21,6 @@ class ItemCreateSerializer(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
-
     owner = UserSerializer()
 
     class Meta:
@@ -45,15 +41,13 @@ class ItemOnSaleSerializer(serializers.ModelSerializer):
 
         return attrs
 
-    @shared_task(bind=True)
     def create(self, validated_data):
-        send_mail(
-            'Your item is on sale!',
-            validated_data['item'].name + ' is on sale!' + ' Current price: ' + str(validated_data['current_price']),
-            settings.DEFAULT_FROM_EMAIL,
-            [validated_data['item'].owner.email],
-            fail_silently=False,
-        )
+
+        send_notification_email.delay('Your item is on sale!',
+                                      validated_data['item'].name + ' is on sale!' + ' Current price: ' + str(
+                                          validated_data['current_price']),
+                                      validated_data['item'].owner.email
+                                      )
 
         item_key = validated_data['item'].id
         item = Item.objects.get(id=item_key)
@@ -63,19 +57,18 @@ class ItemOnSaleSerializer(serializers.ModelSerializer):
         current_item = ItemOnSale.objects.create(**validated_data)
         current_item.save()
 
-        item_sold.apply_async([current_item.id], countdown=30)
+        item_sold.apply_async(args=[current_item.id], countdown=30)
         return current_item
 
     @shared_task(bind=True)
     def update(self, instance, validated_data):
         if instance.current_price >= validated_data['current_price']:
             raise serializers.ValidationError({"current_price": "New price must be greater than previous price."})
-        send_mail(
+
+        send_notification_email.delay(
             'Your bid was intercepted!',
             validated_data['item'].name + ' Current price: ' + str(validated_data['current_price']),
-            settings.DEFAULT_FROM_EMAIL,
-            [validated_data['item'].owner.email],
-            fail_silently=False,
+            validated_data['item'].owner.email
         )
         return super().update(instance, validated_data)
 

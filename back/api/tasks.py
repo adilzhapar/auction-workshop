@@ -26,4 +26,16 @@ def item_sold(item_on_sale_id):
         fail_silently=False,
     )
     item_on_sale.delete()
+    return "Done"
 
+
+@shared_task(bind=True)
+def send_notification_email(topic, message, send_to):
+    send_mail(
+        topic,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [send_to],
+        fail_silently=False,
+    )
+    return "Done"
