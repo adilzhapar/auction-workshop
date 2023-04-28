@@ -4,6 +4,7 @@ from .models import *
 from custom_user.models import User
 from django.conf import settings
 from celery import shared_task
+from .tasks import item_sold
 import time
 
 
@@ -53,6 +54,7 @@ class ItemOnSaleSerializer(serializers.ModelSerializer):
             [validated_data['item'].owner.email],
             fail_silently=False,
         )
+
         item_key = validated_data['item'].id
         item = Item.objects.get(id=item_key)
         item.status = Item.ON_SALE
@@ -60,6 +62,8 @@ class ItemOnSaleSerializer(serializers.ModelSerializer):
 
         current_item = ItemOnSale.objects.create(**validated_data)
         current_item.save()
+
+        item_sold.apply_async([current_item.id], countdown=30)
         return current_item
 
     @shared_task(bind=True)
