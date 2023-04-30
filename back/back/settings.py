@@ -19,7 +19,7 @@ SECRET_KEY = 'django-insecure-cs8rxw3*2ef7g(32@^*m=okvx01=ubwl7clm8cc$fg&ajw7_-j
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -161,7 +161,7 @@ EMAIL_USE_TLS = True
 SERVER_EMAIL = env('EMAIL_HOST_USER')
 
 
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_ACCEPT_CONTENT = {'application/json'}
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'

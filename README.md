@@ -15,4 +15,9 @@ python -m celery -A back worker -l info
 python -m manage.py
 ```
 
+### Otherwise
+```
+docker compose up
+```
+
 ## For front, soon:

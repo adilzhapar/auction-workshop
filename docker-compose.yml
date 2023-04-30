@@ -3,11 +3,11 @@ version: '3.8'
 services:
   web:
     build: ./back
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python manage.py runserver 0.0.0.0:8080
     volumes:
       - ./back/:/usr/src/app/
     ports:
-      - 1337:8000
+      - 1337:8080
     environment:
       - DEBUG=1
       - SECRET_KEY=cs8rxw3*2ef7g(32@^*m=okvx01=ubwl7clm8cc$fg&ajw7_-j
@@ -16,6 +16,8 @@ services:
       - redis
   redis:
     image: redis:alpine
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
   celery:
     build: ./back
     command: celery -A back worker -l info
@@ -25,16 +27,8 @@ services:
       - DEBUG=1
       - SECRET_KEY=cs8rxw3*2ef7g(32@^*m=okvx01=ubwl7clm8cc$fg&ajw7_-j
       - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - redis
-  celery-beat:
-    build: ./back
-    command: celery -A back beat -l info
-    volumes:
-      - ./back/:/usr/src/app/
-    environment:
-      - DEBUG=1
-      - SECRET_KEY=cs8rxw3*2ef7g(32@^*m=okvx01=ubwl7clm8cc$fg&ajw7_-j
-      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
-    depends_on:
-      - redis
+  
