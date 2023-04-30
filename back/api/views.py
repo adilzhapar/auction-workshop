@@ -67,7 +67,7 @@ class ItemOnSaleViewSet(ViewSet):
 
     def update(self, request, pk=None):
         item = get_object_or_404(self.queryset, pk=pk)
-        serializer = ItemOnSaleSerializer(item, data=request.data)
+        serializer = ItemOnSaleUpdateSerializer(item, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

@@ -2,7 +2,9 @@ from rest_framework import serializers
 from .models import *
 from custom_user.models import User
 from celery import shared_task
-from .tasks import item_sold, send_notification_email
+from .tasks import item_sold
+from django.core.mail import send_mail
+from back import settings
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -41,13 +43,17 @@ class ItemOnSaleSerializer(serializers.ModelSerializer):
 
         return attrs
 
+    @shared_task(bind=True)
     def create(self, validated_data):
 
-        send_notification_email.delay('Your item is on sale!',
-                                      validated_data['item'].name + ' is on sale!' + ' Current price: ' + str(
-                                          validated_data['current_price']),
-                                      validated_data['item'].owner.email
-                                      )
+        send_mail(
+            'Your item is on sale!',
+            f"{validated_data['item'].name}'s current price: {str(validated_data['current_price'])}\n"
+            f"bidder is {validated_data['last_bidder'].first_name}",
+            settings.DEFAULT_FROM_EMAIL,
+            [validated_data['item'].owner.email],
+            fail_silently=False
+        )
 
         item_key = validated_data['item'].id
         item = Item.objects.get(id=item_key)
@@ -57,20 +63,38 @@ class ItemOnSaleSerializer(serializers.ModelSerializer):
         current_item = ItemOnSale.objects.create(**validated_data)
         current_item.save()
 
-        item_sold.apply_async(args=[current_item.id], countdown=30)
+        print('item_sold async task called')
+        item_sold.apply_async(args=[current_item.id, validated_data['current_price']], countdown=200)
         return current_item
+
+    class Meta:
+        model = ItemOnSale
+        fields = ('item', 'current_price', 'last_bidder')
+
+
+class ItemOnSaleUpdateSerializer(ItemOnSaleSerializer):
+    def validate(self, attrs):
+        if attrs['current_price'] < attrs['item'].initial_price:
+            raise serializers.ValidationError({"current_price": "Current price must be greater than initial price."})
+        if attrs['last_bidder'] == attrs['item'].owner:
+            raise serializers.ValidationError({"last_bidder": "Last bidder cannot be the owner."})
+
+        return attrs
 
     @shared_task(bind=True)
     def update(self, instance, validated_data):
         if instance.current_price >= validated_data['current_price']:
             raise serializers.ValidationError({"current_price": "New price must be greater than previous price."})
 
-        send_notification_email.delay(
+        send_mail(
             'Your bid was intercepted!',
             validated_data['item'].name + ' Current price: ' + str(validated_data['current_price']),
-            validated_data['item'].owner.email
+            settings.DEFAULT_FROM_EMAIL,
+            [validated_data['item'].owner.email],
         )
-        return super().update(instance, validated_data)
+
+        item_sold.apply_async(args=[instance.id, validated_data['current_price']], countdown=200)
+        return self.update(instance, validated_data)
 
     class Meta:
         model = ItemOnSale
