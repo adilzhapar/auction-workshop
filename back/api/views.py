@@ -1,74 +1,62 @@
-from django.shortcuts import render, get_object_or_404
-from rest_framework.permissions import IsAuthenticated, BasePermission, SAFE_METHODS
-from rest_framework.viewsets import ViewSet
+from rest_framework import mixins, viewsets, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .serializers import *
-from .models import *
+
+from .permissions import ReadOnly
+from .serializers import ItemSerializer, ItemCreateSerializer, ItemOnSaleSerializer, ItemOnSaleUpdateSerializer, \
+    ItemOnSaleReadSerializer
+from .models import Item, ItemOnSale
+from .services import ItemOnSaleService
 
 
-class ReadOnly(BasePermission):
-    def has_permission(self, request, view):
-        return request.method in SAFE_METHODS
-
-
-class ItemViewSet(ViewSet):
+class ItemViewSet(
+    viewsets.GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+):
     permission_classes = [IsAuthenticated | ReadOnly]
-    queryset = Item.objects.all()
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return ItemCreateSerializer
+        return ItemSerializer
+
+    def get_queryset(self):
+        return Item.objects.all()
 
 
-    def list(self, request):
-        serializer = ItemSerializer(self.queryset, many=True)
-        return Response(serializer.data)
-
-    def retrieve(self, request, pk=None):
-
-        queryset = Item.objects.all()
-        item = get_object_or_404(queryset, pk=pk)
-        serializer = ItemSerializer(item)
-        return Response(serializer.data)
-
-    def create(self, request):
-
-        serializer = ItemCreateSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors)
-
-    def update(self, request, pk=None):
-        item = get_object_or_404(self.queryset, pk=pk)
-        serializer = ItemCreateSerializer(item, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors)
-
-
-class ItemOnSaleViewSet(ViewSet):
+class ItemOnSaleViewSet(
+    viewsets.GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+):
     permission_classes = [IsAuthenticated | ReadOnly]
-    queryset = ItemOnSale.objects.all()
 
-    def list(self, request):
-        serializer = ItemOnSaleReadSerializer(self.queryset, many=True)
-        return Response(serializer.data)
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return ItemOnSaleSerializer
+        if self.action == 'update':
+            return ItemOnSaleUpdateSerializer
+        return ItemOnSaleReadSerializer
 
-    def retrieve(self, request, pk=None):
-        queryset = ItemOnSale.objects.all()
-        item = get_object_or_404(queryset, pk=pk)
-        serializer = ItemOnSaleReadSerializer(item)
-        return Response(serializer.data)
+    def get_queryset(self):
+        return ItemOnSale.objects.all()
 
-    def create(self, request):
-        serializer = ItemOnSaleSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        obj = serializer.save()
+        ItemOnSaleService(self.action, obj).create_item_on_sale()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def update(self, request, pk=None):
-        item = get_object_or_404(self.queryset, pk=pk)
-        serializer = ItemOnSaleUpdateSerializer(item, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors)
+    def update(self, request, *args, **kwargs):
+        obj = self.get_object()
+        serializer = self.get_serializer(obj, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        obj = serializer.save()
+        ItemOnSaleService(self.action, obj).update_item_on_sale()
+        return Response(serializer.data, status=status.HTTP_200_OK)

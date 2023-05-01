@@ -1,5 +1,4 @@
-
-
+from datetime import timedelta
 from pathlib import Path
 import os
 import environ
@@ -169,3 +168,7 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_RESULT_BACKEND = 'django-db'
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=8),
+}
