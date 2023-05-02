@@ -1,7 +1,10 @@
 from django.contrib import admin
 from .models import Item, ItemOnSale
 
-admin.site.register(Item)
+
+
+class ItemAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'description', 'img', 'initial_price', 'owner')
 
 
 class ItemOnSaleAdmin(admin.ModelAdmin):
@@ -9,3 +12,5 @@ class ItemOnSaleAdmin(admin.ModelAdmin):
 
 
 admin.site.register(ItemOnSale, ItemOnSaleAdmin)
+admin.site.register(Item, ItemAdmin)
+

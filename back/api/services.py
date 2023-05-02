@@ -21,9 +21,9 @@ class ItemOnSaleService:
         self.item_on_sale.item.save()
         data = self.wrap_data()
         send_notification_email.delay(**data)
-        item_sold.apply_async(args=[self.item_on_sale.id, self.item_on_sale.current_price], countdown=15)
+        item_sold.apply_async(args=[self.item_on_sale.id, self.item_on_sale.current_price], countdown=120)
 
     def update_item_on_sale(self):
         data = self.wrap_data()
         send_notification_email.delay(**data)
-        item_sold.apply_async(args=[self.item_on_sale.id, self.item_on_sale.current_price], countdown=200)
+        item_sold.apply_async(args=[self.item_on_sale.id, self.item_on_sale.current_price], countdown=120)
