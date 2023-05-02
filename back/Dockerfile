@@ -1,23 +1,24 @@
 # pull official base image
 FROM python:3.11.2-alpine
 
-# set work directory
+# Create a non-root user
+RUN adduser -D nonroot
+
+# Set the working directory
 WORKDIR /usr/src/app
 
-# set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
-# install dependencies
-RUN pip install --upgrade pip
-COPY ./requirements.txt /usr/src/app/requirements.txt
+# Copy the requirements file and install dependencies
+COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-# copy entrypoint.sh
-COPY ./entrypoint.sh /usr/src/app/entrypoint.sh
+# Copy the application code
+COPY . .
 
-# copy project
-COPY . /usr/src/app/
+# Set the ownership of the application code to the non-root user
+RUN chown -R nonroot /usr/src/app
 
-# run entrypoint.sh
-ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+# Switch to the non-root user
+USER nonroot
+
+# Start the application
+CMD [ "python", "manage.py", "runserver", "0.0.0.0:8080" ]
