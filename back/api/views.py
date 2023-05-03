@@ -1,4 +1,5 @@
 from rest_framework import mixins, viewsets, status
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -17,6 +18,7 @@ class ItemViewSet(
     mixins.UpdateModelMixin,
 ):
     permission_classes = [IsAuthenticated | ReadOnly]
+    authentication_classes = (TokenAuthentication,)
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -35,6 +37,7 @@ class ItemOnSaleViewSet(
     mixins.UpdateModelMixin,
 ):
     permission_classes = [IsAuthenticated | ReadOnly]
+    authentication_classes = (TokenAuthentication,)
 
     def get_serializer_class(self):
         if self.action == 'create':
