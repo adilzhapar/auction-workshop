@@ -18,7 +18,6 @@ class ItemViewSet(
     mixins.UpdateModelMixin,
 ):
     permission_classes = [IsAuthenticated]
-    authentication_classes = (TokenAuthentication,)
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -37,7 +36,6 @@ class ItemOnSaleViewSet(
     mixins.UpdateModelMixin,
 ):
     permission_classes = [IsAuthenticated]
-    authentication_classes = (TokenAuthentication,)
 
     def get_serializer_class(self):
         if self.action == 'create':
