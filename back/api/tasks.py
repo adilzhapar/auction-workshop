@@ -15,6 +15,7 @@ def item_sold(item_on_sale_id, current_price_on_call):
         try:
             item = item_on_sale.item
             item.status = Item.SOLD
+            item.owner = item_on_sale.last_bidder
             item.save()
 
             send_mail(
