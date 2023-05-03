@@ -31,15 +31,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework.authtoken'
+    'rest_framework.authtoken',
     'django_use_email_as_username.apps.DjangoUseEmailAsUsernameConfig',
     'custom_user.apps.CustomUserConfig',
     'drf_spectacular',
     'api',
     'django_celery_results',
-    'django_celery_beat'
+    'django_celery_beat',
     'corsheaders',
-
 ]
 
 MIDDLEWARE = [
