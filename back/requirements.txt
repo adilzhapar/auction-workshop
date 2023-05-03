@@ -21,3 +21,4 @@ celery~=5.2.2
 django-celery-beat~=2.5.0
 django-celery-results~=2.5.0
 Redis
+django-cors-headers==3.14.0
