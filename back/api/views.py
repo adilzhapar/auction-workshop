@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .permissions import ReadOnly
-from .serializers import ItemSerializer, ItemCreateSerializer, ItemOnSaleSerializer, ItemOnSaleUpdateSerializer, \
+from .serializers import ItemSerializer, ItemCreateSerializer, ItemOnSaleCreateSerializer, ItemOnSaleUpdateSerializer, \
     ItemOnSaleReadSerializer
 from .models import Item, ItemOnSale
 from .services import ItemOnSaleService
@@ -38,7 +38,7 @@ class ItemOnSaleViewSet(
 
     def get_serializer_class(self):
         if self.action == 'create':
-            return ItemOnSaleSerializer
+            return ItemOnSaleCreateSerializer
         if self.action == 'update':
             return ItemOnSaleUpdateSerializer
         return ItemOnSaleReadSerializer
@@ -49,6 +49,7 @@ class ItemOnSaleViewSet(
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.validated_data['last_bidder'] = self.request.user
         obj = serializer.save()
         ItemOnSaleService(self.action, obj).create_item_on_sale()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -59,4 +60,6 @@ class ItemOnSaleViewSet(
         serializer.is_valid(raise_exception=True)
         obj = serializer.save()
         ItemOnSaleService(self.action, obj).update_item_on_sale()
+        obj.last_bidder = self.request.user
+        obj.save()
         return Response(serializer.data, status=status.HTTP_200_OK)

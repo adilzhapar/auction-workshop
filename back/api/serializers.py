@@ -26,14 +26,16 @@ class ItemSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'description', 'img', 'owner', 'initial_price', 'status')
 
 
-class ItemOnSaleSerializer(serializers.ModelSerializer):
+class ItemOnSaleCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
 
         if attrs['current_price'] < attrs['item'].initial_price:
             raise serializers.ValidationError({"current_price": "Current price must be greater than initial price."})
-        if attrs['last_bidder'] == attrs['item'].owner:
+        if attrs['item'].status == Item.SOLD:
+            raise serializers.ValidationError({"item": "This item is already sold."})
+        if self.context['request'].user == attrs['item'].owner:
             raise serializers.ValidationError({"last_bidder": "Last bidder cannot be the owner."})
         same_item_on_sale = ItemOnSale.objects.filter(item=attrs['item']).count()
         if same_item_on_sale >= 1:
@@ -43,26 +45,26 @@ class ItemOnSaleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ItemOnSale
-        fields = ('item', 'current_price', 'last_bidder')
+        fields = ('item', 'current_price')
 
 
-class ItemOnSaleUpdateSerializer(ItemOnSaleSerializer):
+class ItemOnSaleUpdateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
-        if attrs['current_price'] < attrs['item'].initial_price:
-            raise serializers.ValidationError({"current_price": "Current price must be greater than initial price."})
+        attrs = super().validate(attrs)
+
+        if self.context['request'].user == self.instance.item.owner:
+            raise serializers.ValidationError({"last_bidder": "Last bidder cannot be the owner."})
         if self.instance.current_price >= attrs['current_price']:
             raise serializers.ValidationError({"current_price": "New price must be greater than previous price."})
-        if attrs['last_bidder'] == attrs['item'].owner:
-            raise serializers.ValidationError({"last_bidder": "Last bidder cannot be the owner."})
 
         return attrs
 
     class Meta:
         model = ItemOnSale
-        fields = ('item', 'current_price', 'last_bidder')
+        fields = ('current_price',)
 
 
-class ItemOnSaleReadSerializer(ItemOnSaleSerializer):
+class ItemOnSaleReadSerializer(ItemOnSaleCreateSerializer):
     item = ItemSerializer(read_only=True)
     last_bidder = UserSerializer(read_only=True)
 

@@ -25,5 +25,6 @@ class ItemOnSaleService:
 
     def update_item_on_sale(self):
         data = self.wrap_data()
+        data['last_bidder_email'] = self.item_on_sale.last_bidder.email
         send_notification_email.delay(**data)
         item_sold.apply_async(args=[self.item_on_sale.id, self.item_on_sale.current_price], countdown=120)
