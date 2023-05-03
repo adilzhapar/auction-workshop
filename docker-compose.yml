@@ -21,6 +21,7 @@ services:
   celery:
     build: ./back
     command: celery -A back worker -l info
+    user: nonroot
     volumes:
       - ./back/:/usr/src/app/
     environment:
@@ -31,4 +32,3 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - redis
-  
