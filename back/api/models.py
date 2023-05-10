@@ -13,7 +13,7 @@ class Item(models.Model):
     )
     name = models.CharField(max_length=100)
     description = models.TextField()
-    img = models.ImageField(upload_to='images', null=True)
+    img = models.URLField(null=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     initial_price = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=10, choices=TYPES, default=ACTIVE)
